@@ -1,0 +1,94 @@
+@import "../board-grid/board-grid.component.scss";
+
+:host {
+    display: inline-block;
+
+    position: absolute;
+
+    transform-style: preserve-3d;
+}
+
+.board-cell {
+    width: $cell_width;
+    height: $cell_height;
+
+    background-size: cover;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+
+    transition: transform 0.1s;
+    transform-style: preserve-3d;
+    transform: translateZ(0.1px); // fix le hover
+
+    user-select: none;
+}
+
+@for $i from 0 through 10 {
+    .board-cell-#{$i} {
+        background-image: url("../../assets/tiles/" + $i + ".png");
+    }
+}
+
+.board-cell:hover {
+    transform: translateZ(5px);
+}
+
+.board-cell-border {
+    position: absolute;
+
+    background-size: cover;
+    background-image: url("../../assets/tiles/side.png");
+
+    transform-origin: bottom left;
+
+    height: $border_height; 
+}
+
+.board-cell-border-bottom {
+    width: $cell_width;
+
+    transform: rotateX(90deg);
+}
+
+.board-cell-border-left {
+    width: $cell_height;
+
+    transform: rotateX(90deg) rotateY(-90deg);
+}
+
+.board-cell-border-right {
+    width: $cell_height;
+
+    transform: rotateX(90deg) rotateY(-90deg) translateZ(-$cell_width);
+}
+
+.board-cell:after, .board-cell-border:after {
+    content: "";
+
+    position: absolute;
+    left: -0.5px;
+    right: -0.5px;
+    top: -0.5px;
+    bottom: -0.5px;
+
+    border-top: #424242 solid 4px;
+    border-bottom: #424242 solid 4px;
+    border-right: #424242 solid 2px;
+    border-left: #424242 solid 2px;
+}
+
+.board-cell-label {
+    font-size: large;
+    text-align: center;
+    margin: 0;
+    margin-bottom: 5px;
+}
+
+.board-cell-cost {
+    font-size: xx-large;
+    text-align: center;
+    margin: 0;
+    margin-top: 10px;
+}

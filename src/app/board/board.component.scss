@@ -1,0 +1,29 @@
+// TODO rename everything
+
+.main-container {
+    flex-grow: 1;
+    display: flex; 
+    justify-content: center;
+    align-items: center;
+
+    border: green solid 5px;
+}
+
+.container {
+    display: flex;
+
+    height: 100%;
+}
+
+.leaderboard {
+    width: 150px;
+
+    border: red solid 5px;
+}
+
+.player-stats {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    border: #490093 solid 5px;
+}

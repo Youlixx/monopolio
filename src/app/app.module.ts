@@ -1,29 +1,22 @@
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import {NgModule} from '@angular/core';
+import {BrowserModule} from '@angular/platform-browser';
 
-import { AppComponent } from './app.component';
-import { BoardGridComponent } from './board-grid/board-grid.component';
-import { BoardService } from './services/board.service';
-import { BoardComponent } from './board/board.component';
-import { AvatarComponent } from './avatar/avatar.component';
-import { BoardCellComponent } from './board-cell/board-cell.component';
-import { BoardCornerComponent } from './board-corner/board-corner.component';
+import {AppComponent} from './app.component';
+import {GameComponent} from "./pages/game/game.component";
+import {BoardComponent} from "./pages/game/board/board.component";
+import {BoardService} from "./services/board.service";
 
 @NgModule({
   declarations: [
     AppComponent,
-    BoardGridComponent,
-    BoardComponent,
-    AvatarComponent,
-    BoardCellComponent,
-    BoardCornerComponent
+    GameComponent,
+    BoardComponent
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule
+    BrowserModule
   ],
   providers: [BoardService],
   bootstrap: [AppComponent]
 })
-export class AppModule { }
+export class AppModule {
+}

@@ -1,175 +1,205 @@
-const CELL_WIDTH = 110;
-const CELL_HEIGHT = 150;
+import {Injectable} from "@angular/core";
 
+import {Tile} from "../models/board/tile";
+import {
+  AirportTileMesh,
+  ChanceTileMesh,
+  CityTileMesh,
+  PrisonTileMesh,
+  StartTileMesh,
+  TaxTileMesh,
+  ThinTileMesh,
+  TILE_DEPTH,
+  TILE_HEIGHT,
+  TILE_WIDTH,
+  TileMesh,
+  WorldCupTileMesh,
+} from "../models/board/tile-mesh";
+import {BehaviorSubject} from "rxjs";
+import {BoxGeometry, Mesh, MeshBasicMaterial, Scene, TextureLoader} from "three";
 
+const TEXTURES_TO_LOAD = [
+  "assets/board/0.png",
+  "assets/board/1.png",
+  "assets/board/2.png",
+  "assets/board/3.png",
+  "assets/board/4.png",
+  "assets/board/5.png",
+  "assets/board/6.png",
+  "assets/board/7.png",
+  "assets/board/8.png",
+  "assets/board/9.png",
+  "assets/board/10.png"
+];
 
-class Cell {
-
-}
-
-class CellCity extends Cell {
-    tile: number;
-
-    constructor(tile: number) {
-        super();
-
-        this.tile = tile;
-    }
-}
-
-class Player {
-    color: string;
-
-    position: number = 0;
-
-    constructor(color: string) {
-        this.color = color;
-    }
-}
-
+@Injectable({
+  providedIn: "root"
+})
 export class BoardService {
-    /// REWORK DES TYPES
-    public cells: any[];
+  public tileTextures: Array<HTMLImageElement> = [];
 
-    public boardData: any[];
+  private tileMeshes: Array<TileMesh> = [];
 
-    public outerBoardSize: number;
-    public innerBoardSize: number;
+  public anisotropy = 0;
+  public scene!: Scene;
 
-    public gridWidth: number;
-    public gridOffset: number;
+  public ready$ = new BehaviorSubject<boolean>(false);
 
+  constructor() {
+  }
 
-    /// PLAYER API
-    public players: Player[];
+  public loadScene(anisotropy: number) {
+    this.anisotropy = anisotropy;
 
-    // public playerData: any[];
+    this.scene = new Scene();
+    this.scene.background = new TextureLoader().load("assets/background.png");
 
-    angleX: number = 225;
+    this.loadTextures().then(_ => {
+      this.queryTiles().then(_ => {
+        this.updateAndReady();
+      });
+    });
+  }
 
-    constructor() {
-        // retrieve sur le server
-        this.cells = [
-            {tile: 0, place: "GRENADE"},
-            {tile: 0, place: "SEVILLE"},
-            {tile: 0, place: "MADRID"},
-            {tile: 8, place: "BALI"},
-            {tile: 1, place: "HONG KONG"},
-            {tile: 1, place: "PEKIN"},
-            {tile: 1, place: "SHANGAI"},
-            {tile: 2, place: "VENISE"},
-            {tile: 2, place: "MILAN"},
-            {tile: 2, place: "ROME"},
-            {tile: 9, place: "CHANCE"},
-            {tile: 3, place: "HAMBOURG"},
-            {tile: 8, place: "CHYPRE"},
-            {tile: 3, place: "BERLIN"},
-            {tile: 4, place: "LONDES"},
-            {tile: 8, place: "DUBAI"},
-            {tile: 4, place: "SYDNEY"},
-            {tile: 9, place: "CHANCE"},
-            {tile: 5, place: "CHICAGO"},
-            {tile: 5, place: "LAS VEGAS"},
-            {tile: 5, place: "NEW YORK"},
-            {tile: 8, place: "NICE"},
-            {tile: 6, place: "LYON"},
-            {tile: 6, place: "PARIS"},
-            {tile: 9, place: "CHANCE"},
-            {tile: 7, place: "OSAKA"},
-            {tile: 10, place: "IMPOTS"},
-            {tile: 7, place: "TOKYO"},
-        ]
+  private loadTextures(): Promise<void> {
+    let promises: Array<Promise<HTMLImageElement>> = [];
 
-        this.players = [new Player("#47FF00")];
+    for (let url of TEXTURES_TO_LOAD) {
+      promises.push(new Promise((resolve, reject) => {
+        let image = new Image();
+        image.src = url;
 
-        this.outerBoardSize = 2 * CELL_HEIGHT;
-        this.innerBoardSize = 0;
+        image.onload = () => {
+          resolve(image);
+        };
 
-        this.gridWidth = 0;
-        this.gridOffset = 0;
-
-        this.boardData = [];
-
-        this.updateBoardData();
+        image.onerror = () => {
+          reject(image);
+        };
+      }));
     }
 
-    public updateBoardData(): void {
-        this.gridWidth = Math.floor(this.cells.length / 4);
+    return Promise.all(promises).then(images => images.forEach(image => {
+      this.tileTextures.push(image);
+    }));
+  }
 
-        this.innerBoardSize = this.gridWidth * CELL_WIDTH;
-        this.outerBoardSize = 2 * CELL_HEIGHT + this.innerBoardSize;
+  private queryTiles(): Promise<void> {
+    return new Promise<Array<Tile>>((resolve) => {
+      resolve([
+        {type: "start"},
+        {type: "city", name: "GRENADE", cost: 0, texture: 0},
+        {type: "city", name: "SEVILLE", cost: 0, texture: 0},
+        {type: "city", name: "MADRID", cost: 0, texture: 0},
+        {type: "city", name: "BALI", cost: 0, texture: 8},
+        {type: "city", name: "HONG KONG", cost: 0, texture: 1},
+        {type: "city", name: "PEKIN", cost: 0, texture: 1},
+        {type: "city", name: "SHANGAI", cost: 0, texture: 1},
+        {type: "prison"},
+        {type: "city", name: "VENISE", cost: 0, texture: 2},
+        {type: "city", name: "MILAN", cost: 0, texture: 2},
+        {type: "city", name: "ROME", cost: 0, texture: 2},
+        {type: "chance"},
+        {type: "city", name: "HAMBOURG", cost: 0, texture: 3},
+        {type: "city", name: "CHYPRE", cost: 0, texture: 8},
+        {type: "city", name: "BERLIN", cost: 0, texture: 3},
+        {type: "cup"},
+        {type: "city", name: "LONDRES", cost: 0, texture: 4},
+        {type: "city", name: "DUBAI", cost: 0, texture: 8},
+        {type: "city", name: "SYDNEY", cost: 0, texture: 4},
+        {type: "chance"},
+        {type: "city", name: "CHICAGO", cost: 0, texture: 5},
+        {type: "city", name: "LAS VEGAS", cost: 0, texture: 5},
+        {type: "city", name: "NEW YORK", cost: 0, texture: 5},
+        {type: "airport"},
+        {type: "city", name: "NICE", cost: 0, texture: 8},
+        {type: "city", name: "LYON", cost: 0, texture: 6},
+        {type: "city", name: "PARIS", cost: 0, texture: 6},
+        {type: "chance"},
+        {type: "city", name: "OSAKA", cost: 0, texture: 7},
+        {type: "tax"},
+        {type: "city", name: "TOKYO", cost: 0, texture: 7}
+      ])
+    }).then(tiles => {
+      tiles.forEach(tile => {
+        switch (tile.type) {
+          case "city":
+            this.tileMeshes.push(new CityTileMesh(tile, this));
+            break;
+          case "chance":
+            this.tileMeshes.push(new ChanceTileMesh(tile));
+            break;
+          case "tax":
+            this.tileMeshes.push(new TaxTileMesh(tile));
+            break;
+          case "start":
+            this.tileMeshes.push(new StartTileMesh(tile));
+            break;
+          case "prison":
+            this.tileMeshes.push(new PrisonTileMesh(tile));
+            break;
+          case "cup":
+            this.tileMeshes.push(new WorldCupTileMesh(tile));
+            break;
+          case "airport":
+            this.tileMeshes.push(new AirportTileMesh(tile));
+            break;
+        }
+      });
 
-        this.gridOffset = CELL_HEIGHT + this.gridWidth * CELL_WIDTH;
+      const gridSize = this.tileMeshes.length / 4 - 1;
 
-        this.boardData = [];
+      let tileIndex = 0;
+      let currentX = TILE_WIDTH * gridSize / 2 + TILE_HEIGHT / 2;
+      let currentY = TILE_WIDTH * gridSize / 2 + TILE_HEIGHT / 2;
 
-        const gridWidthLarge = this.gridWidth + 1;
+      for (let side = 0; side < 4; side++) {
+        const multiplierX = side == 0 ? -1 : side == 2 ? 1 : 0;
+        const multiplierY = side == 1 ? -1 : side == 3 ? 1 : 0;
 
-        let cellIndex = 1;
-        let listIndex = 0;
+        this.tileMeshes[tileIndex].position.x = currentX;
+        this.tileMeshes[tileIndex].position.z = currentY;
 
-        for(let cell = 0; cell < this.gridWidth; cell++) {
-            const position = cellIndex % gridWidthLarge;
+        currentX += multiplierX * (TILE_WIDTH / 2 + TILE_HEIGHT / 2);
+        currentY += multiplierY * (TILE_WIDTH / 2 + TILE_HEIGHT / 2);
 
-            this.boardData.push({
-                id: cellIndex,
-                position: {left: "0px", top: CELL_HEIGHT + (this.gridWidth - position) * CELL_WIDTH + "px"},
-                orientation: "column",
-                data: this.cells[listIndex++]
-            });
+        this.scene.add(this.tileMeshes[tileIndex++]);
 
-            cellIndex++;
+        while (this.tileMeshes[tileIndex] instanceof ThinTileMesh) {
+          this.tileMeshes[tileIndex].position.x = currentX;
+          this.tileMeshes[tileIndex].position.z = currentY;
+
+          currentX += multiplierX * TILE_WIDTH;
+          currentY += multiplierY * TILE_WIDTH;
+
+          if (side % 2 == 1) {
+            this.tileMeshes[tileIndex].rotation.y = Math.PI / 2;
+          }
+
+          this.scene.add(this.tileMeshes[tileIndex++]);
         }
 
-        cellIndex++;
+        currentX += multiplierX * (TILE_HEIGHT / 2 - TILE_WIDTH / 2);
+        currentY += multiplierY * (TILE_HEIGHT / 2 - TILE_WIDTH / 2);
+      }
 
-        for(let cell = 0; cell < this.gridWidth; cell++) {
-            const position = cellIndex % gridWidthLarge;
+      let ground = new Mesh(
+        new BoxGeometry(gridSize * TILE_WIDTH, 0, gridSize * TILE_WIDTH),
+        new MeshBasicMaterial({color: 0xBED36A})
+      );
 
-            this.boardData.push({
-                id: cellIndex,
-                position: {left: CELL_HEIGHT + (position - 1) * CELL_WIDTH + "px", top: "0px"},
-                orientation: "row",
-                data: this.cells[listIndex++]
-            });
+      ground.position.y = -TILE_DEPTH / 2;
+      this.scene.add(ground);
+    });
+  }
 
-            cellIndex++;
-        }
+  private updateAndReady() {
+    // this.tileMeshes.forEach(mesh => {
+    //   if (mesh instanceof UpdatableTileMesh) {
+    //     mesh.updateTexture();
+    //   }
+    // });
 
-        cellIndex++;
-
-        for(let cell = 0; cell < this.gridWidth; cell++) {
-            const position = cellIndex % gridWidthLarge;
-
-            this.boardData.push({
-                id: cellIndex,
-                position: {left: this.gridOffset + "px", top: CELL_HEIGHT + (position - 1) * CELL_WIDTH + "px"},
-                orientation: "column",
-                data: this.cells[listIndex++]
-            });
-
-            cellIndex++;
-        }
-
-        cellIndex++;
-
-        for(let cell = 0; cell < this.gridWidth; cell++) {
-            const position = cellIndex % gridWidthLarge;
-
-            this.boardData.push({
-                id: cellIndex,
-                position: {left: CELL_HEIGHT + (this.gridWidth - position) * CELL_WIDTH + "px", top: this.gridOffset + "px"},
-                orientation: "row",
-                data: this.cells[listIndex++]
-            });
-
-            cellIndex++;
-        }
-    }
-
-    public setCells(cells: any[]): void {
-        this.cells = cells;
-
-        this.updateBoardData();
-    }
+    this.ready$.next(true);
+  }
 }
